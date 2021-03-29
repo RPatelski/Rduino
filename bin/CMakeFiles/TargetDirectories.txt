@@ -1,0 +1,7 @@
+/home/pi/Rduino/bin/CMakeFiles/install/strip.dir
+/home/pi/Rduino/bin/CMakeFiles/edit_cache.dir
+/home/pi/Rduino/bin/CMakeFiles/rduino.dir
+/home/pi/Rduino/bin/CMakeFiles/rebuild_cache.dir
+/home/pi/Rduino/bin/CMakeFiles/list_install_components.dir
+/home/pi/Rduino/bin/CMakeFiles/install.dir
+/home/pi/Rduino/bin/CMakeFiles/install/local.dir

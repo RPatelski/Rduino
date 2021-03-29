@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC   -shared -Wl,-soname,librduino.so -o librduino.so CMakeFiles/rduino.dir/src/r_gpio.c.o CMakeFiles/rduino.dir/src/r_spi.c.o  -lgpiod -lpthread 

@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/r_gpio.h
+
+../include/r_spi.h
+
+/home/pi/Rduino/src/r_gpio.c
+pthread.h
+-
+gpiod.h
+-
+r_gpio.h
+/home/pi/Rduino/src/r_gpio.h
+
+/home/pi/Rduino/src/r_spi.c
+unistd.h
+-
+stdio.h
+-
+sys/ioctl.h
+-
+linux/spi/spidev.h
+-
+pthread.h
+-
+stdbool.h
+-
+sys/fcntl.h
+-
+r_spi.h
+/home/pi/Rduino/src/r_spi.h
+
