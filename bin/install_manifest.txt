@@ -1,4 +1,0 @@
-/usr/local/lib/librduino.so
-/usr/local/include/r_gpio.h
-/usr/local/include/r_spi.h
-/usr/local/include/rduino.h
