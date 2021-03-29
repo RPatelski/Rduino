@@ -16,12 +16,20 @@ enum interrupt_type
     INT_FALLING = 2
 };
 
+enum pin_state
+{
+    LOW = 0,
+    HIGH = 1
+};
+
 int setMode(int pin, int mode);
 
 void digitalWrite(int pin, int value);
 int digitalRead(int pin);
 
 int waitInterrupt(int pin);
-int attachInterrupt(int pin, int mode, void(*callback)(int));
+int attachInterrupt(int pin, int mode, void(*callback)());
+int attachInterruptArg(int pin, int mode, void(*callback)(void*), void* params);
+void detachInterrupt(int pin);
 
 #endif

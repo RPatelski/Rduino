@@ -11,10 +11,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <r_spi.h>
+#include <stdbool.h>
 
 uint8_t* tx;
 uint8_t* rx;
 int buf_len;
+
+bool done = 0;
 
 void gen_random(char* s, const int len)
 {
@@ -24,14 +27,8 @@ void gen_random(char* s, const int len)
   s[len] = 0;
 }
 
-void checkConsistency(int ret)
+void checkConsistency()
 {
-    if(ret <= 0)
-    {
-        printf("Transmission error\n");
-        return;
-    }
-
     for(int j = 0; j < buf_len; ++j)
     {
         printf("TX: %c, RX: %c\n", tx[j], rx[j]);
@@ -42,6 +39,8 @@ void checkConsistency(int ret)
             return;
         }
     }
+
+    done = 1;
 }
 
 int main(int argc, char *argv[])
@@ -59,7 +58,7 @@ int main(int argc, char *argv[])
 
     transferInterrupt(0, tx, rx, buf_len, checkConsistency);
 
-    while(1) 
+    while(!done) 
     {
         
     };

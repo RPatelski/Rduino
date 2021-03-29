@@ -30,6 +30,7 @@ void setDataMode(int spi, int mode);
 void setNoCS(int spi, int disable);
 
 int transfer(int spi, void* tx, void* rx, int length);
-int transferInterrupt(int spi, void* tx, void* rx, int length, void(*callback)(int));
+int transferInterrupt(int spi, void* tx, void* rx, int length, void(*callback)());
+int transferInterruptArg(int spi, void* tx, void* rx, int length, void(*callback)(void*), void* params);
 
 #endif

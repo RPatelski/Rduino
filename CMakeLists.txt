@@ -17,7 +17,7 @@ file(GLOB HEADERS "include/*.h")
 add_library(${APP_LIB_NAME} SHARED ${SOURCES} ${HEADERS})
 
 #include headers and libs
-target_include_directories(${APP_LIB_NAME} PRIVATE include)
+target_include_directories(${APP_LIB_NAME} PUBLIC include)
 target_link_libraries(${APP_LIB_NAME} PRIVATE ${LIBS_TO_LINK} )
 
 #set properties

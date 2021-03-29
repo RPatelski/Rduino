@@ -4,9 +4,20 @@
 #include "r_gpio.h"
 
 #define RGPIO_CONSUMER "r_gpio"
+#define RGPIO_COUNT 58
 
 //handle to RPi GPIO chip, opened only once at initialization
 struct gpiod_chip* rpi_chip = NULL;
+
+//info about all GPIOs
+struct gpio_info
+{
+    struct gpiod_line* line;
+    int interrupt;
+};
+
+//array of informations about all GPIOs
+struct gpio_info gpios[RGPIO_COUNT];
 
 void tryInitGpio()
 {
@@ -18,25 +29,27 @@ int setMode(int pin, int mode)
 {
     tryInitGpio();
 
-    struct gpiod_line* line = gpiod_chip_get_line(rpi_chip, pin);
-    gpiod_line_release(line);
+    gpios[pin].line = gpiod_chip_get_line(rpi_chip, pin);
+    gpiod_line_release(gpios[pin].line);
+
+    detachInterrupt(pin);
 
     switch(mode)
     {
         case OUTPUT:
-            return gpiod_line_request_output(line, RGPIO_CONSUMER, 0);
+            return gpiod_line_request_output(gpios[pin].line, RGPIO_CONSUMER, 0);
 
         case INPUT:
-            return gpiod_line_request_input(line, RGPIO_CONSUMER);
+            return gpiod_line_request_input(gpios[pin].line, RGPIO_CONSUMER);
 
         case ISR_RISING:
-            return gpiod_line_request_rising_edge_events(line, RGPIO_CONSUMER);
+            return gpiod_line_request_rising_edge_events(gpios[pin].line, RGPIO_CONSUMER);
 
         case ISR_FALLING:
-            return gpiod_line_request_falling_edge_events(line, RGPIO_CONSUMER);
+            return gpiod_line_request_falling_edge_events(gpios[pin].line, RGPIO_CONSUMER);
 
         case ISR_BOTH:
-            return gpiod_line_request_both_edges_events(line, RGPIO_CONSUMER);
+            return gpiod_line_request_both_edges_events(gpios[pin].line, RGPIO_CONSUMER);
             
         default:
             return -1;
@@ -45,27 +58,23 @@ int setMode(int pin, int mode)
 
 void digitalWrite(int pin, int value)
 {
-    struct gpiod_line* line = gpiod_chip_get_line(rpi_chip, pin);
-    gpiod_line_set_value(line, value);
+    gpiod_line_set_value(gpios[pin].line, value);
     return;
 }
 
 int digitalRead(int pin)
 {
-    struct gpiod_line* line = gpiod_chip_get_line(rpi_chip, pin);
-    return gpiod_line_get_value(line);
+    return gpiod_line_get_value(gpios[pin].line);
 }
 
 int waitInterrupt(int pin)
 {
-    struct gpiod_line* line = gpiod_chip_get_line(rpi_chip, pin);
-
     int ret;
-    ret = gpiod_line_event_wait(line, NULL);
+    ret = gpiod_line_event_wait(gpios[pin].line, NULL);
     if(ret < 0) return ret;
 
     struct gpiod_line_event event;
-    ret =  gpiod_line_event_read(line, &event);
+    ret =  gpiod_line_event_read(gpios[pin].line, &event);
 
     return event.event_type;
 }
@@ -73,45 +82,64 @@ int waitInterrupt(int pin)
 struct interruptAttr_gpio
 {
     int pin;
-    void(*callback)(int);
+    void(*callback)();
+    void* params;
     volatile bool copied;
 };
 
-void* interruptThread_gpio(void* attr)
+void* interruptThreadArg_gpio(void* attr)
 {
     int pin = ((struct interruptAttr_gpio*)attr)->pin;
-    void(*callback)(int) = ((struct interruptAttr_gpio*)attr)->callback;
-
+    void(*callback)(void*) = ((struct interruptAttr_gpio*)attr)->callback;
+    void* params = ((struct interruptAttr_gpio*)attr)->params;
     ((struct interruptAttr_gpio*)attr)->copied = true;
 
     while(1)
     {
         int edge = waitInterrupt(pin);
         if(edge > 0)
-            callback(edge);
+            callback(params);
     }
 
     return NULL;
 }
 
-int attachInterrupt(int pin, int mode, void(*callback)(int))
+void* interruptThread_gpio(void* attr)
+{
+    int pin = ((struct interruptAttr_gpio*)attr)->pin;
+    void(*callback)() = ((struct interruptAttr_gpio*)attr)->callback;
+    ((struct interruptAttr_gpio*)attr)->copied = true;
+
+    while(1)
+    {
+        int edge = waitInterrupt(pin);
+        if(edge > 0)
+            callback();
+    }
+
+    return NULL;
+}
+
+int attachInterruptArg(int pin, int mode, void(*callback)(void*), void* params)
 {
     tryInitGpio();
     
-    struct gpiod_line* line = gpiod_chip_get_line(rpi_chip, pin);
-    gpiod_line_release(line);
+    gpios[pin].line = gpiod_chip_get_line(rpi_chip, pin);
+    gpiod_line_release(gpios[pin].line);
+
+    detachInterrupt(pin);
 
     int ret;
     switch(mode)
     {
         case ISR_RISING:
-            ret = gpiod_line_request_rising_edge_events(line, RGPIO_CONSUMER);
+            ret = gpiod_line_request_rising_edge_events(gpios[pin].line, RGPIO_CONSUMER);
             break;
         case ISR_FALLING:
-            ret = gpiod_line_request_falling_edge_events(line, RGPIO_CONSUMER);
+            ret = gpiod_line_request_falling_edge_events(gpios[pin].line, RGPIO_CONSUMER);
             break;
         case ISR_BOTH:
-            ret = gpiod_line_request_both_edges_events(line, RGPIO_CONSUMER);
+            ret = gpiod_line_request_both_edges_events(gpios[pin].line, RGPIO_CONSUMER);
             break;
     }
 
@@ -124,11 +152,63 @@ int attachInterrupt(int pin, int mode, void(*callback)(int))
     struct sched_param shparam = {sched_get_priority_max(SCHED_FIFO)};
     pthread_attr_setschedparam(&attr, &shparam);
     
-    struct interruptAttr_gpio intAttr = {pin, callback, 0};
+    struct interruptAttr_gpio intAttr = {pin, callback, params, 0};
+    ret = pthread_create(&tid, &attr, &interruptThreadArg_gpio, &intAttr);
+
+    if(ret < 0) return ret;
+
+    while(intAttr.copied == false) {};
+
+    gpios[pin].interrupt = tid;
+    return tid;
+}
+
+
+int attachInterrupt(int pin, int mode, void(*callback)())
+{
+    tryInitGpio();
+
+    gpios[pin].line = gpiod_chip_get_line(rpi_chip, pin);
+    gpiod_line_release(gpios[pin].line);
+
+    detachInterrupt(pin);
+
+    int ret;
+    switch(mode)
+    {
+        case ISR_RISING:
+            ret = gpiod_line_request_rising_edge_events(gpios[pin].line, RGPIO_CONSUMER);
+            break;
+        case ISR_FALLING:
+            ret = gpiod_line_request_falling_edge_events(gpios[pin].line, RGPIO_CONSUMER);
+            break;
+        case ISR_BOTH:
+            ret = gpiod_line_request_both_edges_events(gpios[pin].line, RGPIO_CONSUMER);
+            break;
+    }
+
+
+    pthread_t tid;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+    struct sched_param shparam = {sched_get_priority_max(SCHED_FIFO)};
+    pthread_attr_setschedparam(&attr, &shparam);
+    
+    struct interruptAttr_gpio intAttr = {pin, callback, NULL, 0};
     ret = pthread_create(&tid, &attr, &interruptThread_gpio, &intAttr);
 
     if(ret < 0) return ret;
 
     while(intAttr.copied == false) {};
+    
+    gpios[pin].interrupt = tid;
     return tid;
+}
+
+void detachInterrupt(int pin)
+{
+    if (gpios[pin].interrupt != 0)
+        pthread_cancel(gpios[pin].interrupt);
 }
