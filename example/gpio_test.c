@@ -18,15 +18,17 @@
 #include <r_gpio.h>
 
 
-void callback_function(int edge)
+void callback_function()
 {
+    int edge = digitalRead(6);
+
     printf("Interrupt ");
     switch(edge)
     {
-        case INT_FALLING:
+        case 0:
             printf("Falling!\n");
             break;
-        case INT_RISING:
+        case 1:
             printf("Rising!\n");
             break;
     }
