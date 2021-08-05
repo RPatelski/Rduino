@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(RDUINO VERSION 0.0.0)
+project(RDUINO VERSION 0.0.1)
 
 #define names and files
 set(APP_LIB_NAME rduino)

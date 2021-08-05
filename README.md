@@ -1,6 +1,10 @@
 # Rduino
 Small library providing Arduino-like API for some of Raspberry Pi 4 peripherals on Linux system.
 
+![GitHub release](https://img.shields.io/github/v/release/RPatelski/Rduino)
+![GitHub issues](https://img.shields.io/github/issues/RPatelski/Rduino)
+![GitHub](https://img.shields.io/github/license/RPatelski/Rduino)
+
 ## Modules
 Currently API for only few peripherals is prepared
 - GPIO
