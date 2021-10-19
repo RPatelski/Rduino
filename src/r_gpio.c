@@ -29,6 +29,8 @@ int setMode(int pin, int mode)
 {
     tryInitGpio();
 
+    if(pin < 0) return -1;
+
     gpios[pin].line = gpiod_chip_get_line(rpi_chip, pin);
     gpiod_line_release(gpios[pin].line);
 
@@ -58,17 +60,23 @@ int setMode(int pin, int mode)
 
 void digitalWrite(int pin, int value)
 {
+    if(pin < 0) return;
+
     gpiod_line_set_value(gpios[pin].line, value);
     return;
 }
 
 int digitalRead(int pin)
 {
+    if(pin < 0) return -1;
+
     return gpiod_line_get_value(gpios[pin].line);
 }
 
 int waitInterrupt(int pin)
 {
+    if(pin < 0) return -1;
+
     int ret;
     ret = gpiod_line_event_wait(gpios[pin].line, NULL);
     if(ret < 0) return ret;
@@ -124,6 +132,8 @@ int attachInterruptArg(int pin, int mode, void(*callback)(void*), void* params)
 {
     tryInitGpio();
     
+    if(pin < 0) return -1;
+
     gpios[pin].line = gpiod_chip_get_line(rpi_chip, pin);
     gpiod_line_release(gpios[pin].line);
 
@@ -167,6 +177,8 @@ int attachInterruptArg(int pin, int mode, void(*callback)(void*), void* params)
 int attachInterrupt(int pin, int mode, void(*callback)())
 {
     tryInitGpio();
+
+    if(pin < 0) return -1;
 
     gpios[pin].line = gpiod_chip_get_line(rpi_chip, pin);
     gpiod_line_release(gpios[pin].line);

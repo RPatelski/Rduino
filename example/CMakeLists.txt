@@ -5,8 +5,11 @@ project(RDUINO_EXAMPLES VERSION 0.0.0)
 set(APP_EXE_NAME rduino_gpio)
 
 #include packages
-find_library(RDUINO_LIB rduino REQUIRED)
-set(LIBS_TO_LINK ${RDUINO_LIB})
+#find_library(RDUINO_LIB rduino REQUIRED)
+#set(LIBS_TO_LINK ${RDUINO_LIB})
+
+find_package(Rduino REQUIRED)
+set(LIBS_TO_LINK Rduino::Rduino)
 
 #generate lists of all source and header files
 file(GLOB HEADERS "include/*.h")
